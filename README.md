@@ -28,10 +28,24 @@ This agent is a multi-tool agent that can perform various tasks such as getting 
 ```mermaid
 graph TD
     subgraph "Project: ruiztechservices/agents_adk"
-        A[giovanni_agent] --> B(Playwright Tools: navigate, click, etc.);
-        C[multi_tool_agent] --> D(Data Tools: get_weather, get_current_time);
-        E[Unused Services] --> F[grok_service.py];
-        E --> G[openai_service.py];
+        subgraph "giovanni_agent"
+            A[Agent: giovanni_agent
+Model: gemini-1.5-flash] --> B{Tools};
+            B --> B1[get_website_text (requests, BeautifulSoup)];
+            B --> B2[ask_openai_agent];
+            B2 --> C[Service: openai_service.py];
+        end
+
+        subgraph "multi_tool_agent"
+            D[Agent: weather_time_agent
+Model: gemini-2.0-flash] --> E{Tools};
+            E --> E1[get_weather (local)];
+            E --> E2[get_current_time (datetime, zoneinfo)];
+        end
+
+        subgraph "Unused Services"
+            F[grok_service.py];
+        end
     end
 ```
     [ ]This diagram is not complete[TODO].
