@@ -1,57 +1,75 @@
-from playwright.sync_api import sync_playwright, Page, Browser
+import requests
+from bs4 import BeautifulSoup
 from google.adk.agents import Agent
+from .openai_service import get_openai_response
 
-# Global state for the browser and page
-browser: Browser = None
-page: Page = None
+def get_website_text(url: str) -> dict:
+    """
+    Fetches the content of a URL and returns its visible text.
 
-def navigate(url: str) -> dict:
-    """Navigates to a URL in a browser. Initializes the browser if not already running."""
-    global browser, page
+    Args:
+        url (str): The URL of the website to fetch.
+
+    Returns:
+        dict: A dictionary containing the status and the extracted text or an error message.
+    """
     try:
-        if browser is None or not browser.is_connected():
-            playwright = sync_playwright().start()
-            browser = playwright.chromium.launch(headless=True)
-        page = browser.new_page()
-        page.goto(url, wait_until='domcontentloaded')
-        return {"status": "success", "report": f"Successfully navigated to {url}"}
-    except Exception as e:
-        return {"status": "error", "error_message": str(e)}
+        # Add a scheme to the URL if it's missing to ensure the request works
+        if not url.startswith(('http://', 'https://')):
+            url = 'https://' + url
 
-def click(selector: str) -> dict:
-    """Clicks on an element specified by a CSS selector."""
-    if page is None:
-        return {"status": "error", "error_message": "Browser not initialized. Please navigate to a URL first."}
+        # Set a user-agent to mimic a real browser
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+
+        # Make the web request
+        response = requests.get(url, headers=headers, timeout=10)
+        # Raise an exception if the request was not successful
+        response.raise_for_status()
+
+        # Parse the HTML content
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # Remove script and style elements
+        for script_or_style in soup(["script", "style"]):
+            script_or_style.decompose()
+
+        # Get the visible text
+        text = soup.get_text()
+        lines = (line.strip() for line in text.splitlines())
+        chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+        report = '\n'.join(chunk for chunk in chunks if chunk)
+
+        return {"status": "success", "report": report}
+
+    except requests.exceptions.RequestException as e:
+        return {"status": "error", "error_message": f"Network error fetching URL: {str(e)}"}
+    except Exception as e:
+        return {"status": "error", "error_message": f"An unexpected error occurred: {str(e)}"}
+
+
+def ask_openai_agent(question: str) -> dict:
+    """
+    Ask the OpenAI agent a question and return the response.
+    
+    Args:
+        question (str): The question to ask the OpenAI agent.
+    
+    Returns:
+        dict: A dictionary containing the status and the response from the OpenAI agent or an error message.
+    """
     try:
-        page.click(selector)
-        return {"status": "success", "report": f"Clicked on element '{selector}'"}
+        response = get_openai_response(question)
+        return {"status": "success", "response": response}
     except Exception as e:
-        return {"status": "error", "error_message": str(e)}
+        return {"status": "error", "error_message": f"An unexpected error occurred: {str(e)}"}
 
-def get_page_content() -> dict:
-    """Returns the full HTML content of the current page."""
-    if page is None:
-        return {"status": "error", "error_message": "Browser not initialized. Please navigate to a URL first."}
-    try:
-        content = page.content()
-        return {"status": "success", "report": content}
-    except Exception as e:
-        return {"status": "error", "error_message": str(e)}
-
-def close_browser() -> dict:
-    """Closes the browser session."""
-    global browser, page
-    if browser and browser.is_connected():
-        browser.close()
-        browser = None
-        page = None
-        return {"status": "success", "report": "Browser closed successfully."}
-    return {"status": "success", "report": "Browser was not running."}
 
 root_agent = Agent(
     name="giovanni_agent",
     model="gemini-1.5-flash",
-    description="An agent for Giovanni that can interactively browse the web.",
-    instruction="You are a helpful agent for Giovanni. Use the browser tools to navigate, click, and read web pages.",
-    tools=[navigate, click, get_page_content, close_browser],
+    description="An agent for Giovanni that can fetch and read the text content of web pages.",
+    instruction="You are a helpful agent for Giovanni. Use the get_website_text tool to retrieve the textual content from a URL.",
+    tools=[get_website_text, ask_openai_agent],
 )
