@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from google.adk.agents import Agent
 from .openai_service import get_openai_response
+from .grok_service import get_grok_response
 
 def get_website_text(url: str) -> dict:
     """
@@ -65,11 +66,27 @@ def ask_openai_agent(question: str) -> dict:
     except Exception as e:
         return {"status": "error", "error_message": f"An unexpected error occurred: {str(e)}"}
 
+def ask_grok_agent(question: str) -> dict:
+    """
+    Ask the Grok agent a question and return the response.
+    
+    Args:
+        question (str): The question to ask the Grok agent.
+    
+    Returns:
+        dict: A dictionary containing the status and the response from the Grok agent or an error message.
+    """
+    try:
+        response = get_grok_response(question)
+        return {"status": "success", "response": response}
+    except Exception as e:
+        return {"status": "error", "error_message": f"An unexpected error occurred: {str(e)}"}
+
 
 root_agent = Agent(
     name="giovanni_agent",
     model="gemini-1.5-flash",
     description="An agent for Giovanni that can fetch and read the text content of web pages.",
     instruction="You are a helpful agent for Giovanni. Use the get_website_text tool to retrieve the textual content from a URL.",
-    tools=[get_website_text, ask_openai_agent],
+    tools=[get_website_text, ask_openai_agent, ask_grok_agent],
 )
