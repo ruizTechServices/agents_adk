@@ -8,7 +8,7 @@ This project provides a collection of autonomous agents built with the Google Ag
 
 The `giovanni_agent` is a powerful web browsing agent that can navigate to a URL, extract its text content, and leverage other AI models (OpenAI and Grok) for further analysis.
 
-- **Model:** `gemini-1.5-flash`
+- **Model:** `gemini-2.0-flash`
 - **Tools:**
     - `get_website_text`: Fetches and parses the visible text from a given URL.
     - `ask_multimodel_agent`: Routes prompts to either OpenAI or Grok.
@@ -43,9 +43,29 @@ graph TD
     end
 ```
 
-## Installation
+## Getting Started
 
-To get started with these agents, clone the repository and install the required dependencies:
+Follow these steps to set up your environment and run the agents.
+
+### 1. Create and Activate a Virtual Environment
+
+It's recommended to use a virtual environment to manage project dependencies.
+
+**On Windows:**
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+```
+
+**On macOS/Linux:**
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### 2. Install Dependencies
+
+Once your virtual environment is activated, install the required packages:
 
 ```bash
 pip install -r requirements.txt
@@ -53,17 +73,31 @@ pip install -r requirements.txt
 
 ## Usage
 
-Here's how you can run the agents:
+You can interact with the agents using the ADK web interface or by running them directly.
 
-### Giovanni Agent
+### Using the ADK Web Interface (Recommended)
+
+This method provides a user-friendly interface for interacting with your agents.
+
+```bash
+adk web
+```
+
+This will start a local web server. Open the provided URL in your browser to access the agent interface.
+
+### Running Agents Directly
+
+#### Giovanni Agent
+
+To run the `giovanni_agent` directly in your terminal:
 
 ```bash
 python -m giovanni_agent.agent
 ```
 
-Once running, you can interact with the agent in the terminal.
+#### Weather and Time Agent
 
-### Weather and Time Agent
+To run the `weather_time_agent` and see example outputs:
 
 ```python
 from multi_tool_agent.agent import root_agent
